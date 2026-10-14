@@ -17,8 +17,7 @@ public sealed class ServiceMetricsCommand : AsyncCommand<ServiceMetricsCommand.S
         public required string ServiceId { get; init; }
 
         [CommandOption("--range <RANGE>")]
-        [Description("Predefined time range: 10min, 1h, 24h, 7d (default: 1h)")]
-        [DefaultValue("1h")]
+        [Description("Predefined time range: 10min, 1h, 24h, 7d (default: 1h). Not with --from/--to")]
         public string? Range { get; init; }
 
         [CommandOption("--from <TIMESTAMP>")]
@@ -33,11 +32,7 @@ public sealed class ServiceMetricsCommand : AsyncCommand<ServiceMetricsCommand.S
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var parts = new List<string>();
-        if (!string.IsNullOrEmpty(settings.Range)) parts.Add($"range={settings.Range}");
-        if (settings.From.HasValue) parts.Add($"from={settings.From}");
-        if (settings.To.HasValue) parts.Add($"to={settings.To}");
-        var query = parts.Count > 0 ? "?" + string.Join("&", parts) : "";
+        var query = MetricsQuery.Build(settings.Range, settings.From, settings.To);
         var result = await client.GetAsync($"projects/{settings.ProjectId}/services/{settings.ServiceId}/metrics{query}");
         Output.Write(result);
         return 0;

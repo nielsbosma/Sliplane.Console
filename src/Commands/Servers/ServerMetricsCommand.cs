@@ -13,8 +13,7 @@ public sealed class ServerMetricsCommand : AsyncCommand<ServerMetricsCommand.Set
         public required string ServerId { get; init; }
 
         [CommandOption("--range <RANGE>")]
-        [Description("Predefined time range: 10min, 1h, 24h, 7d (default: 1h)")]
-        [DefaultValue("1h")]
+        [Description("Predefined time range: 10min, 1h, 24h, 7d (default: 1h). Not with --from/--to")]
         public string? Range { get; init; }
 
         [CommandOption("--from <TIMESTAMP>")]
@@ -29,18 +28,9 @@ public sealed class ServerMetricsCommand : AsyncCommand<ServerMetricsCommand.Set
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var query = BuildQuery(settings);
+        var query = MetricsQuery.Build(settings.Range, settings.From, settings.To);
         var result = await client.GetAsync($"servers/{settings.ServerId}/metrics{query}");
         Output.Write(result);
         return 0;
-    }
-
-    private static string BuildQuery(Settings s)
-    {
-        var parts = new List<string>();
-        if (!string.IsNullOrEmpty(s.Range)) parts.Add($"range={s.Range}");
-        if (s.From.HasValue) parts.Add($"from={s.From}");
-        if (s.To.HasValue) parts.Add($"to={s.To}");
-        return parts.Count > 0 ? "?" + string.Join("&", parts) : "";
     }
 }
