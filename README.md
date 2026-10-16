@@ -131,6 +131,7 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `servers metrics` | Get server metrics |
 | `servers volumes` | List server volumes |
 | `servers create-volume` | Create a volume on a server |
+| `servers rename-volume` | Rename a volume |
 | **Services** | |
 | `services list` | List services in a project |
 | `services get` | Get service details |
@@ -148,6 +149,12 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `services delete-env` | Delete an environment variable |
 | `services add-domain` | Add a custom domain |
 | `services remove-domain` | Remove a custom domain |
+| `services attach-volume` | Attach an existing or new volume (redeploys) |
+| `services update-volume` | Change a volume's mount path (redeploys) |
+| `services detach-volume` | Detach a volume, keeping its data (redeploys) |
+| `services ssh-keys` | List your SSH keys attached to a service |
+| `services attach-ssh-key` | Attach an SSH key and get the SSH connection details |
+| `services detach-ssh-key` | Detach an SSH key from a service |
 | **Postgres** | |
 | `postgres list` | List all Postgres databases |
 | `postgres get` | Get Postgres database details |
@@ -158,6 +165,7 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `postgres unpause` | Unpause a paused Postgres database |
 | `postgres restart` | Restart a Postgres database |
 | `postgres rotate-credentials` | Rotate generated credentials |
+| `postgres metrics` | Get CPU, memory, disk and connection metrics |
 | `postgres logs` | List recent server logs |
 | `postgres connections` | List current active connections |
 | `postgres relation-sizes` | List current table and index sizes |
@@ -176,6 +184,10 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `buckets keys` | List bucket access keys |
 | `buckets create-key` | Create a bucket access key |
 | `buckets delete-key` | Delete a bucket access key |
+| **SSH keys** | |
+| `ssh-keys list` | List your SSH public keys |
+| `ssh-keys create` | Register an SSH public key, optionally expiring |
+| `ssh-keys delete` | Delete an SSH key (detach it from services first) |
 | **Credentials** | |
 | `credentials list` | List all registry credentials |
 | `credentials get` | Get registry credentials details |

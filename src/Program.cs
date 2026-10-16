@@ -7,6 +7,7 @@ using Sliplane.Console.Commands.Postgres;
 using Sliplane.Console.Commands.Projects;
 using Sliplane.Console.Commands.Servers;
 using Sliplane.Console.Commands.Services;
+using Sliplane.Console.Commands.SshKeys;
 using Sliplane.Console.Infrastructure;
 using Spectre.Console.Cli;
 
@@ -73,6 +74,8 @@ app.Configure(config =>
             .WithDescription("List server volumes");
         servers.AddCommand<CreateServerVolumeCommand>("create-volume")
             .WithDescription("Create a volume on a server");
+        servers.AddCommand<RenameServerVolumeCommand>("rename-volume")
+            .WithDescription("Rename a volume (services are not redeployed)");
     });
 
     config.AddBranch("services", services =>
@@ -110,6 +113,18 @@ app.Configure(config =>
             .WithDescription("Add a custom domain");
         services.AddCommand<RemoveDomainCommand>("remove-domain")
             .WithDescription("Remove a custom domain");
+        services.AddCommand<AttachVolumeCommand>("attach-volume")
+            .WithDescription("Attach an existing or new volume and redeploy");
+        services.AddCommand<UpdateVolumeMountCommand>("update-volume")
+            .WithDescription("Change where an attached volume is mounted and redeploy");
+        services.AddCommand<DetachVolumeCommand>("detach-volume")
+            .WithDescription("Detach a volume (its data is kept) and redeploy");
+        services.AddCommand<ListServiceSshKeysCommand>("ssh-keys")
+            .WithDescription("List your SSH keys attached to a service");
+        services.AddCommand<AttachSshKeyCommand>("attach-ssh-key")
+            .WithDescription("Attach an SSH key and print the SSH connection details");
+        services.AddCommand<DetachSshKeyCommand>("detach-ssh-key")
+            .WithDescription("Detach an SSH key from a service");
     });
 
     config.AddBranch("postgres", postgres =>
@@ -133,6 +148,8 @@ app.Configure(config =>
             .WithDescription("Restart a Postgres database");
         postgres.AddCommand<RotatePostgresCredentialsCommand>("rotate-credentials")
             .WithDescription("Rotate generated Postgres credentials");
+        postgres.AddCommand<PostgresMetricsCommand>("metrics")
+            .WithDescription("Get CPU, memory, disk and connection metrics");
         postgres.AddCommand<PostgresLogsCommand>("logs")
             .WithDescription("List recent Postgres server logs");
         postgres.AddCommand<PostgresActiveConnectionsCommand>("connections")
@@ -172,6 +189,17 @@ app.Configure(config =>
             .WithDescription("Create a bucket access key");
         buckets.AddCommand<DeleteBucketKeyCommand>("delete-key")
             .WithDescription("Delete a bucket access key");
+    });
+
+    config.AddBranch("ssh-keys", sshKeys =>
+    {
+        sshKeys.SetDescription("Manage your SSH public keys for service access");
+        sshKeys.AddCommand<ListSshKeysCommand>("list")
+            .WithDescription("List your SSH keys");
+        sshKeys.AddCommand<CreateSshKeyCommand>("create")
+            .WithDescription("Register an SSH public key, optionally expiring");
+        sshKeys.AddCommand<DeleteSshKeyCommand>("delete")
+            .WithDescription("Delete an SSH key (detach it from services first)");
     });
 
     config.AddBranch("credentials", credentials =>

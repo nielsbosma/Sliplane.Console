@@ -120,6 +120,38 @@ public sealed class AgentReadmeCommand : Command<AgentReadmeCommand.Settings>
             sliplane services set-env --project-id <id> --service-id <id> --key K --value V [--secret]
             sliplane services delete-env --project-id <id> --service-id <id> --key K
             sliplane services pause|unpause --project-id <id> --service-id <id>
+            sliplane services attach-volume --project-id <id> --service-id <id> (--volume-id <id> | --name <n>) --mount-path /data
+            sliplane services update-volume --project-id <id> --service-id <id> --volume-id <id> --mount-path /data
+            sliplane services detach-volume --project-id <id> --service-id <id> --volume-id <id>
+            sliplane servers rename-volume --server-id <id> --volume-id <id> --name <n>
+
+        Volume changes on a service redeploy it. `detach-volume` keeps the data on the server;
+        `attach-volume --name` reuses the server's volume of that name if there is one, and only
+        creates a new volume when there is not.
+
+        ## Metrics
+
+            sliplane servers metrics --server-id <id> -a <account>
+            sliplane services metrics --project-id <id> --service-id <id> -a <account>
+            sliplane postgres metrics --postgres-id <id> -a <account>
+
+        All three take `--range` (10min, 1h, 24h; servers and services also 7d) or `--from`/`--to`
+        in Unix seconds, never both. With neither, the last hour.
+
+        ## SSH access to a service
+
+            sliplane ssh-keys list -a <account>
+            sliplane ssh-keys create --name <n> --public-key-file ~/.ssh/id_ed25519.pub [--expires-in 2h] -a <account>
+            sliplane services attach-ssh-key --project-id <id> --service-id <id> --key-id <id> -a <account>
+            sliplane services ssh-keys --project-id <id> --service-id <id> -a <account>
+            sliplane services detach-ssh-key --project-id <id> --service-id <id> --key-id <id> -a <account>
+            sliplane ssh-keys delete --key-id <id> -a <account>
+
+        SSH keys belong to the user the account's API key acts as, not to the organization.
+        `attach-ssh-key` prints the `host`, `port` and `username` to connect with. For access
+        you only need for a while, prefer `--expires-in` (5m to 30d): the key is deleted and its
+        access removed when it runs out. `ssh-keys delete` answers `409` while the key is still
+        attached anywhere - detach it first. `create` refuses a private key outright.
 
         Four behaviours that will otherwise cost you data:
 

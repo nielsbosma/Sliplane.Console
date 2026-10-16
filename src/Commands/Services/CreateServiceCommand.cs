@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text.Json;
 using Sliplane.Console.Infrastructure;
 using Spectre.Console.Cli;
 
@@ -150,36 +149,16 @@ public sealed class CreateServiceCommand : AsyncCommand<CreateServiceCommand.Set
 
         if (s.Volumes is not null)
         {
-            // Sending a name creates a volume - every time, even when one of that
-            // name already exists. Two services asked for "app-data" end up on two
-            // different volumes with the same name, which is invisible until one of
-            // them is missing its data. So resolve the name to an existing id first
-            // and only fall back to creating when there genuinely is none.
+            // Names resolve to existing volumes first; see ServerVolumes.
             Dictionary<string, string>? byName = null;
             if (s.Volumes.Any(v => !v.Split(':', 2)[0].StartsWith("volume_")))
-            {
-                byName = new Dictionary<string, string>(StringComparer.Ordinal);
-                var existing = await client.GetAsync($"servers/{s.ServerId}/volumes");
-                if (existing.RootElement.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var e in existing.RootElement.EnumerateArray())
-                    {
-                        if (e.TryGetProperty("name", out var n) && e.TryGetProperty("id", out var i))
-                        {
-                            var name = n.GetString();
-                            // First wins, so a re-run keeps using the same volume.
-                            if (name is not null && !byName.ContainsKey(name))
-                                byName[name] = i.GetString()!;
-                        }
-                    }
-                }
-            }
+                byName = await ServerVolumes.ByNameAsync(client, s.ServerId);
 
             var volumes = new List<Dictionary<string, object>>();
             foreach (var v in s.Volumes)
             {
                 var parts = v.Split(':', 2);
-                var vol = new Dictionary<string, object> { ["mountPath"] = parts[1] };
+                var vol = new Dictionary<string, object> { ["mountPath"] = PathArg.Check(parts[1], "--volume") };
                 if (parts[0].StartsWith("volume_"))
                     vol["id"] = parts[0];
                 else if (byName is not null && byName.TryGetValue(parts[0], out var id))

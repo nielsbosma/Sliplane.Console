@@ -1,7 +1,7 @@
 namespace Sliplane.Console.Infrastructure;
 
 /// <summary>
-/// The time window for <c>servers metrics</c> and <c>services metrics</c>.
+/// The time window for <c>servers metrics</c>, <c>services metrics</c> and <c>postgres metrics</c>.
 /// The API takes either a predefined <c>range</c> or a <c>from</c>/<c>to</c> pair and
 /// refuses both together (HTTP 400). So the 1h default applies only when no window was
 /// given at all; it must never be declared as the option's default, or it would be sent
