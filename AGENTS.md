@@ -135,6 +135,15 @@ fails every healthcheck with nothing in the output to explain why.
 **The root namespace is `Sliplane.Console`, which shadows `System.Console`.** Write
 `System.Console.WriteLine` explicitly.
 
+**Console encoding is forced to UTF-8 in `Program.cs`.** On Windows, .NET otherwise writes piped
+output in the console's OEM code page, for example CP850, where `ä` becomes the byte 0x84. That is
+invalid UTF-8 for `jq` or any JSON reader. Cmd's own redirect can hide this, so check through a pipe
+(`| od -c`) instead.
+
+**YAML output quotes strings that look like numbers.** This comes from `WithQuotingNecessaryStrings`
+in `YamlOutput`. Without it, an org id such as `"0150"` prints bare and reads back as the number
+150.
+
 **Spectre discovers options across the whole inheritance chain.** Declaring the same
 `[CommandOption]` on a base and a derived settings class — with `new` *or* `override` — makes the
 app refuse to start with "Option is duplicated". `--json` lives on `LocalSettings` and nowhere
