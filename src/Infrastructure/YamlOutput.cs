@@ -6,8 +6,11 @@ namespace Sliplane.Console.Infrastructure;
 
 public static class YamlOutput
 {
+    // Ids, ports and org ids arrive as strings that can look like numbers. Unquoted, a YAML reader
+    // turns "0150" into 150 and "true" into a boolean.
     private static readonly ISerializer Serializer = new SerializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
+        .WithQuotingNecessaryStrings()
         .Build();
 
     public static void Write(JsonDocument doc)

@@ -11,6 +11,12 @@ using Sliplane.Console.Commands.SshKeys;
 using Sliplane.Console.Infrastructure;
 using Spectre.Console.Cli;
 
+// On Windows the console defaults to the OEM code page (CP850 on a Swedish install), so piped
+// output turns "ä" into a byte that is invalid UTF-8 for jq or any JSON reader. stdout, stderr
+// and stdin are UTF-8 everywhere.
+System.Console.OutputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+System.Console.InputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
 // The error envelope is rendered before any command has run, so the format has to be known
 // before Spectre parses anything. Commands overwrite this with the same value.
 Output.UseJson = args.Contains("--json");
