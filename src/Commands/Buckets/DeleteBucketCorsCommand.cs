@@ -9,15 +9,17 @@ public sealed class DeleteBucketCorsCommand : AsyncCommand<DeleteBucketCorsComma
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--bucket-id <ID>")]
-        [Description("The ID of the bucket")]
+        [CommandOption("--bucket-id|--bucket <BUCKET>")]
+        [Description("Bucket name or ID")]
         public required string BucketId { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        await client.DeleteAsync($"buckets/{settings.BucketId}/cors");
+        var bucketId = await Resolve.BucketAsync(client, settings.BucketId);
+        settings.Confirm($"Delete the CORS rules of bucket {bucketId}?");
+        await client.DeleteAsync($"buckets/{bucketId}/cors");
         AnsiConsole.MarkupLine("[green]CORS configuration deleted.[/]");
         return 0;
     }

@@ -3,7 +3,7 @@ using Sliplane.Console.Storage;
 
 namespace Sliplane.Console.Auth;
 
-public sealed record ResolvedAccount(string Name, AccountConfig Config, string ApiKey)
+public sealed record ResolvedAccount(string Name, AccountConfig Config, string ApiKey, OAuthLogin.Credential? OAuth = null)
 {
     public string? OrgId => string.IsNullOrWhiteSpace(Config.OrgId) ? null : Config.OrgId;
     public string Identity => Config.Identity;
@@ -51,7 +51,9 @@ public static class AccountResolver
                 "The config entry exists but the keystore has nothing under it.",
                 $"sliplane accounts add {name} --api-key <key>");
 
-        return new ResolvedAccount(name, account, key);
+        // A browser login stores its token pair as JSON; an API key is stored as itself.
+        var oauth = OAuthLogin.Credential.TryParse(key);
+        return new ResolvedAccount(name, account, oauth?.AccessToken ?? key, oauth);
     }
 
     private static string Describe(SliplaneConfig config)

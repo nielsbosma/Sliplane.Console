@@ -16,7 +16,8 @@ public sealed class RestorePostgresCommand : AsyncCommand<RestorePostgresCommand
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.PostAsync($"postgres/{settings.PostgresId}/restore", new { timestamp = settings.Timestamp });
+        var postgresId = await Resolve.PostgresAsync(client, settings.PostgresId);
+        var result = await client.PostAsync($"postgres/{postgresId}/restore", new { timestamp = settings.Timestamp });
         Output.Write(result);
         return 0;
     }

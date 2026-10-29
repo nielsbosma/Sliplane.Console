@@ -9,8 +9,8 @@ public sealed class DeleteBucketKeyCommand : AsyncCommand<DeleteBucketKeyCommand
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--bucket-id <ID>")]
-        [Description("The ID of the bucket")]
+        [CommandOption("--bucket-id|--bucket <BUCKET>")]
+        [Description("Bucket name or ID")]
         public required string BucketId { get; init; }
 
         [CommandOption("--key-id <ID>")]
@@ -21,7 +21,9 @@ public sealed class DeleteBucketKeyCommand : AsyncCommand<DeleteBucketKeyCommand
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        await client.DeleteAsync($"buckets/{settings.BucketId}/keys/{settings.KeyId}");
+        var bucketId = await Resolve.BucketAsync(client, settings.BucketId);
+        settings.Confirm($"Revoke key {settings.KeyId} of bucket {bucketId}?");
+        await client.DeleteAsync($"buckets/{bucketId}/keys/{settings.KeyId}");
         AnsiConsole.MarkupLine("[green]Access key deleted.[/]");
         return 0;
     }

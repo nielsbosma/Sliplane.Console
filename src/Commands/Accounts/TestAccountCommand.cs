@@ -19,7 +19,10 @@ public sealed class TestAccountCommand : AsyncCommand<TestAccountCommand.Setting
         settings.ApplyOutputMode();
 
         var account = AccountResolver.Resolve(settings.Name);
-        var client = new SliplaneClient(account.ApiKey, account.OrgId);
+        var client = new SliplaneClient(account.ApiKey, account.OrgId)
+        {
+            Refresh = account.OAuth is null ? null : () => OAuthLogin.RefreshAndStoreAsync(account.Name, account.OAuth)
+        };
 
         using var me = await client.GetAsync("me");
         var identity = SliplaneIdentity.Describe(me);

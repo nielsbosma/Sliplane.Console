@@ -8,8 +8,8 @@ public sealed class UpdateCredentialsCommand : AsyncCommand<UpdateCredentialsCom
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--credential-id <ID>")]
-        [Description("The ID of the registry credentials to update")]
+        [CommandOption("--credential-id|--credential <CREDENTIAL>")]
+        [Description("Registry credentials name or ID to update")]
         public required string CredentialId { get; init; }
 
         [CommandOption("--name <NAME>")]
@@ -20,7 +20,8 @@ public sealed class UpdateCredentialsCommand : AsyncCommand<UpdateCredentialsCom
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.PatchAsync($"registry-credentials/{settings.CredentialId}", new { name = settings.Name });
+        var credentialId = await Resolve.CredentialAsync(client, settings.CredentialId);
+        var result = await client.PatchAsync($"registry-credentials/{credentialId}", new { name = settings.Name });
         Output.Write(result);
         return 0;
     }

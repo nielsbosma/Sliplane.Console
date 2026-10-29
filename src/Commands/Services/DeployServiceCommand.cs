@@ -9,12 +9,12 @@ public sealed class DeployServiceCommand : AsyncCommand<DeployServiceCommand.Set
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--project-id <ID>")]
-        [Description("The ID of the project")]
-        public required string ProjectId { get; init; }
+        [CommandOption("--project-id|--project <PROJECT>")]
+        [Description("Project name or ID (optional: the service is looked up in every project)")]
+        public string? ProjectId { get; init; }
 
-        [CommandOption("--service-id <ID>")]
-        [Description("The ID of the service to deploy")]
+        [CommandOption("--service-id|--service <SERVICE>")]
+        [Description("Service name or ID to deploy")]
         public required string ServiceId { get; init; }
 
         [CommandOption("--tag <TAG>")]
@@ -25,10 +25,11 @@ public sealed class DeployServiceCommand : AsyncCommand<DeployServiceCommand.Set
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
+        var (projectId, serviceId) = await Resolve.ServiceAsync(client, settings.ProjectId, settings.ServiceId);
         // An absent body means no Content-Type either, and the deploy endpoint
         // rejects that with "Invalid request body". An empty object is accepted.
         object body = !string.IsNullOrEmpty(settings.Tag) ? new { tag = settings.Tag } : new { };
-        await client.PostAsync($"projects/{settings.ProjectId}/services/{settings.ServiceId}/deploy", body);
+        await client.PostAsync($"projects/{projectId}/services/{serviceId}/deploy", body);
         AnsiConsole.MarkupLine("[green]Deployment request accepted.[/]");
         return 0;
     }

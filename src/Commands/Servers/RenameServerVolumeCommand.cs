@@ -8,8 +8,8 @@ public sealed class RenameServerVolumeCommand : AsyncCommand<RenameServerVolumeC
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--server-id <ID>")]
-        [Description("The ID of the server the volume lives on")]
+        [CommandOption("--server-id|--server <SERVER>")]
+        [Description("Server name or ID the volume lives on")]
         public required string ServerId { get; init; }
 
         [CommandOption("--volume-id <ID>")]
@@ -24,8 +24,9 @@ public sealed class RenameServerVolumeCommand : AsyncCommand<RenameServerVolumeC
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
+        var serverId = await Resolve.ServerAsync(client, settings.ServerId);
         var result = await client.PatchAsync(
-            $"servers/{settings.ServerId}/volumes/{settings.VolumeId}",
+            $"servers/{serverId}/volumes/{settings.VolumeId}",
             new { name = settings.Name });
         Output.Write(result);
         return 0;

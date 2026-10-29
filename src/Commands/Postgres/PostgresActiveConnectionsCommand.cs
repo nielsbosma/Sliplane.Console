@@ -8,7 +8,8 @@ public sealed class PostgresActiveConnectionsCommand : AsyncCommand<PostgresSett
     public override async Task<int> ExecuteAsync(CommandContext context, PostgresSettings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.GetAsync($"postgres/{settings.PostgresId}/active-connections");
+        var postgresId = await Resolve.PostgresAsync(client, settings.PostgresId);
+        var result = await client.GetAsync($"postgres/{postgresId}/active-connections");
         Output.Write(result);
         return 0;
     }

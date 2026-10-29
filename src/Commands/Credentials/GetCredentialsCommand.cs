@@ -8,15 +8,16 @@ public sealed class GetCredentialsCommand : AsyncCommand<GetCredentialsCommand.S
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--credential-id <ID>")]
-        [Description("The ID of the registry credentials")]
+        [CommandOption("--credential-id|--credential <CREDENTIAL>")]
+        [Description("Registry credentials name or ID")]
         public required string CredentialId { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.GetAsync($"registry-credentials/{settings.CredentialId}");
+        var credentialId = await Resolve.CredentialAsync(client, settings.CredentialId);
+        var result = await client.GetAsync($"registry-credentials/{credentialId}");
         Output.Write(result);
         return 0;
     }

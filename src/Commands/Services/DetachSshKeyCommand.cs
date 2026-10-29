@@ -9,12 +9,12 @@ public sealed class DetachSshKeyCommand : AsyncCommand<DetachSshKeyCommand.Setti
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--project-id <ID>")]
-        [Description("The ID of the project")]
-        public required string ProjectId { get; init; }
+        [CommandOption("--project-id|--project <PROJECT>")]
+        [Description("Project name or ID (optional: the service is looked up in every project)")]
+        public string? ProjectId { get; init; }
 
-        [CommandOption("--service-id <ID>")]
-        [Description("The ID of the service")]
+        [CommandOption("--service-id|--service <SERVICE>")]
+        [Description("Service name or ID")]
         public required string ServiceId { get; init; }
 
         [CommandOption("--key-id <ID>")]
@@ -25,7 +25,9 @@ public sealed class DetachSshKeyCommand : AsyncCommand<DetachSshKeyCommand.Setti
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        await client.DeleteAsync($"projects/{settings.ProjectId}/services/{settings.ServiceId}/ssh-keys/{settings.KeyId}");
+        var (projectId, serviceId) = await Resolve.ServiceAsync(client, settings.ProjectId, settings.ServiceId);
+        settings.Confirm($"Detach SSH key {settings.KeyId} from service {serviceId}?");
+        await client.DeleteAsync($"projects/{projectId}/services/{serviceId}/ssh-keys/{settings.KeyId}");
         AnsiConsole.MarkupLine("[green]SSH key detached.[/]");
         return 0;
     }

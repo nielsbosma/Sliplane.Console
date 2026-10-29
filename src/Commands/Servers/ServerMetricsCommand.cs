@@ -8,8 +8,8 @@ public sealed class ServerMetricsCommand : AsyncCommand<ServerMetricsCommand.Set
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--server-id <ID>")]
-        [Description("The ID of the server")]
+        [CommandOption("--server-id|--server <SERVER>")]
+        [Description("Server name or ID")]
         public required string ServerId { get; init; }
 
         [CommandOption("--range <RANGE>")]
@@ -23,13 +23,25 @@ public sealed class ServerMetricsCommand : AsyncCommand<ServerMetricsCommand.Set
         [CommandOption("--to <TIMESTAMP>")]
         [Description("To timestamp (Unix seconds)")]
         public long? To { get; init; }
+
+        [CommandOption("-w|--watch")]
+        [Description("Redraw live charts every 5 s until Ctrl+C (terminal only; not with --from/--to)")]
+        public bool Watch { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
+        var serverId = await Resolve.ServerAsync(client, settings.ServerId);
         var query = MetricsQuery.Build(settings.Range, settings.From, settings.To);
-        var result = await client.GetAsync($"servers/{settings.ServerId}/metrics{query}");
+        if (settings.Watch)
+        {
+            if (settings.From.HasValue || settings.To.HasValue)
+                throw SliplaneException.Invalid("--watch shows a moving window; drop --from/--to.");
+            await MetricsWatch.RunAsync("Server " + settings.ServerId, () => client.GetAsync($"servers/{serverId}/metrics{query}"), TimeSpan.FromSeconds(5));
+            return 0;
+        }
+        var result = await client.GetAsync($"servers/{serverId}/metrics{query}");
         Output.Write(result);
         return 0;
     }

@@ -32,6 +32,7 @@ public sealed class UpdatePostgresCommand : AsyncCommand<UpdatePostgresCommand.S
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
+        var postgresId = await Resolve.PostgresAsync(client, settings.PostgresId);
         var body = new Dictionary<string, object>();
         if (!string.IsNullOrEmpty(settings.Name)) body["name"] = settings.Name;
         if (!string.IsNullOrEmpty(settings.InstanceType)) body["instanceType"] = settings.InstanceType;
@@ -41,7 +42,7 @@ public sealed class UpdatePostgresCommand : AsyncCommand<UpdatePostgresCommand.S
         else if (settings.IpAllow is not null)
             body["ipAllowList"] = IpAllowList.Parse(settings.IpAllow);
 
-        var result = await client.PatchAsync($"postgres/{settings.PostgresId}", body);
+        var result = await client.PatchAsync($"postgres/{postgresId}", body);
         Output.Write(result);
         return 0;
     }

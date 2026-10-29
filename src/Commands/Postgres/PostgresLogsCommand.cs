@@ -24,12 +24,13 @@ public sealed class PostgresLogsCommand : AsyncCommand<PostgresLogsCommand.Setti
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
+        var postgresId = await Resolve.PostgresAsync(client, settings.PostgresId);
         var parts = new List<string>();
         if (!string.IsNullOrEmpty(settings.Since)) parts.Add($"since={Uri.EscapeDataString(settings.Since)}");
         if (!string.IsNullOrEmpty(settings.Until)) parts.Add($"until={Uri.EscapeDataString(settings.Until)}");
         if (settings.Limit.HasValue) parts.Add($"limit={settings.Limit}");
         var query = parts.Count > 0 ? "?" + string.Join("&", parts) : "";
-        var result = await client.GetAsync($"postgres/{settings.PostgresId}/logs{query}");
+        var result = await client.GetAsync($"postgres/{postgresId}/logs{query}");
         Output.Write(result);
         return 0;
     }

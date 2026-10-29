@@ -8,17 +8,17 @@ public sealed class CreateServiceCommand : AsyncCommand<CreateServiceCommand.Set
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--project-id <ID>")]
-        [Description("The ID of the project")]
-        public required string ProjectId { get; init; }
+        [CommandOption("--project-id|--project <PROJECT>")]
+        [Description("Project name or ID (default: 'sliplane config set project')")]
+        public string? ProjectId { get; init; }
 
         [CommandOption("--name <NAME>")]
         [Description("The name of the service")]
         public required string Name { get; init; }
 
-        [CommandOption("--server-id <ID>")]
-        [Description("The ID of the server to run the service on")]
-        public required string ServerId { get; init; }
+        [CommandOption("--server-id|--server <SERVER>")]
+        [Description("Server name or ID to run the service on (default: the only server, or asked in a terminal)")]
+        public string? ServerId { get; init; }
 
         [CommandOption("--image <URL>")]
         [Description("Container image URL (e.g. docker.io/library/nginx:latest)")]
@@ -73,12 +73,16 @@ public sealed class CreateServiceCommand : AsyncCommand<CreateServiceCommand.Set
         public string? Cmd { get; init; }
 
         [CommandOption("--env <KEY=VALUE>")]
-        [Description("Environment variable (repeatable)")]
+        [Description("Environment variable KEY=value, or KEY to copy it from your environment (repeatable)")]
         public string[]? Env { get; init; }
 
         [CommandOption("--secret-env <KEY=VALUE>")]
-        [Description("Secret environment variable (repeatable)")]
+        [Description("Secret environment variable KEY=value, or KEY to copy it from your environment (repeatable)")]
         public string[]? SecretEnv { get; init; }
+
+        [CommandOption("--env-file <FILE>")]
+        [Description("Read KEY=value lines from a file, stored as secrets; applied before --env (repeatable)")]
+        public string[]? EnvFiles { get; init; }
 
         [CommandOption("--volume <VOLUME>")]
         [Description("Volume mount as id:/path or name:/path (repeatable)")]
@@ -88,18 +92,20 @@ public sealed class CreateServiceCommand : AsyncCommand<CreateServiceCommand.Set
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var body = await BuildBodyAsync(client, settings);
-        var result = await client.PostAsync($"projects/{settings.ProjectId}/services", body);
+        var projectId = await Resolve.ProjectOrDefaultAsync(client, settings, settings.ProjectId);
+        var serverId = await Resolve.ServerOrChooseAsync(client, settings.ServerId);
+        var body = await BuildBodyAsync(client, settings, serverId);
+        var result = await client.PostAsync($"projects/{projectId}/services", body);
         Output.Write(result);
         return 0;
     }
 
-    private static async Task<Dictionary<string, object>> BuildBodyAsync(SliplaneClient client, Settings s)
+    private static async Task<Dictionary<string, object>> BuildBodyAsync(SliplaneClient client, Settings s, string serverId)
     {
         var body = new Dictionary<string, object>
         {
             ["name"] = s.Name,
-            ["serverId"] = s.ServerId
+            ["serverId"] = serverId
         };
 
         if (!string.IsNullOrEmpty(s.Image))
@@ -128,23 +134,7 @@ public sealed class CreateServiceCommand : AsyncCommand<CreateServiceCommand.Set
         if (!string.IsNullOrEmpty(s.Healthcheck)) body["healthcheck"] = PathArg.Check(s.Healthcheck, "--healthcheck");
         if (!string.IsNullOrEmpty(s.Cmd)) body["cmd"] = s.Cmd;
 
-        var envVars = new List<Dictionary<string, object>>();
-        if (s.Env is not null)
-        {
-            foreach (var e in s.Env)
-            {
-                var parts = e.Split('=', 2);
-                envVars.Add(new Dictionary<string, object> { ["key"] = parts[0], ["value"] = parts.Length > 1 ? parts[1] : "", ["secret"] = false });
-            }
-        }
-        if (s.SecretEnv is not null)
-        {
-            foreach (var e in s.SecretEnv)
-            {
-                var parts = e.Split('=', 2);
-                envVars.Add(new Dictionary<string, object> { ["key"] = parts[0], ["value"] = parts.Length > 1 ? parts[1] : "", ["secret"] = true });
-            }
-        }
+        var envVars = EnvEntries.Build(s.EnvFiles, s.Env, s.SecretEnv);
         if (envVars.Count > 0) body["env"] = envVars;
 
         if (s.Volumes is not null)
@@ -152,7 +142,7 @@ public sealed class CreateServiceCommand : AsyncCommand<CreateServiceCommand.Set
             // Names resolve to existing volumes first; see ServerVolumes.
             Dictionary<string, string>? byName = null;
             if (s.Volumes.Any(v => !v.Split(':', 2)[0].StartsWith("volume_")))
-                byName = await ServerVolumes.ByNameAsync(client, s.ServerId);
+                byName = await ServerVolumes.ByNameAsync(client, serverId);
 
             var volumes = new List<Dictionary<string, object>>();
             foreach (var v in s.Volumes)

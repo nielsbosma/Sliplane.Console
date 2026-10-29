@@ -8,15 +8,17 @@ public sealed class DeleteBucketCommand : AsyncCommand<DeleteBucketCommand.Setti
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--bucket-id <ID>")]
-        [Description("The ID of the bucket to delete")]
+        [CommandOption("--bucket-id|--bucket <BUCKET>")]
+        [Description("Bucket name or ID to delete")]
         public required string BucketId { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.DeleteWithResponseAsync($"buckets/{settings.BucketId}");
+        var bucketId = await Resolve.BucketAsync(client, settings.BucketId);
+        settings.Confirm($"Schedule bucket {bucketId} for deletion?");
+        var result = await client.DeleteWithResponseAsync($"buckets/{bucketId}");
         Output.Write(result);
         return 0;
     }

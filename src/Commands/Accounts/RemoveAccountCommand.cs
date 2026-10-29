@@ -12,12 +12,7 @@ public sealed class RemoveAccountCommand : AsyncCommand<RemoveAccountCommand.Set
     {
         [CommandArgument(0, "<NAME>")]
         [Description("Account name")]
-        public string Name { get; init; } = "";
-
-        [CommandOption("--yes")]
-        [Description("Skip the confirmation prompt")]
-        public bool Yes { get; init; }
-    }
+        public string Name { get; init; } = "";    }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {

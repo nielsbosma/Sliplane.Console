@@ -14,6 +14,13 @@ public static class Output
 {
     public static bool UseJson { get; set; }
 
+    /// <summary>The saved 'sliplane config set output json' preference.</summary>
+    public static bool PreferJson()
+    {
+        try { return Storage.ConfigStore.Load().Preferences.Output.Equals("json", StringComparison.OrdinalIgnoreCase); }
+        catch { return false; }
+    }
+
     // The relaxed encoder keeps quotes, angle brackets and non-ASCII readable; this output goes
     // to a terminal or jq, never into HTML.
     public static readonly JsonSerializerOptions Indented =

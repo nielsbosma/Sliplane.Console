@@ -6,8 +6,8 @@ namespace Sliplane.Console.Commands.Postgres;
 
 public class PostgresSettings : ApiSettings
 {
-    [CommandOption("--postgres-id <ID>")]
-    [Description("The ID of the Postgres database")]
+    [CommandOption("--postgres-id|--postgres <DATABASE>")]
+    [Description("Postgres database name or ID")]
     public required string PostgresId { get; init; }
 }
 

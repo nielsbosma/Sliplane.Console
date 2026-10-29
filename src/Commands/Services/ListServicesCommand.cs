@@ -9,8 +9,8 @@ public sealed class ListServicesCommand : AsyncCommand<ListServicesCommand.Setti
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--project-id <ID>")]
-        [Description("The ID of the project (lists all projects if omitted)")]
+        [CommandOption("--project-id|--project <PROJECT>")]
+        [Description("Project name or ID (lists all projects if omitted)")]
         public string? ProjectId { get; init; }
     }
 

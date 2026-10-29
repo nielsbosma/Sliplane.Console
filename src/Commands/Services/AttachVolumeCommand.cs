@@ -9,12 +9,12 @@ public sealed class AttachVolumeCommand : AsyncCommand<AttachVolumeCommand.Setti
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--project-id <ID>")]
-        [Description("The ID of the project")]
-        public required string ProjectId { get; init; }
+        [CommandOption("--project-id|--project <PROJECT>")]
+        [Description("Project name or ID (optional: the service is looked up in every project)")]
+        public string? ProjectId { get; init; }
 
-        [CommandOption("--service-id <ID>")]
-        [Description("The ID of the service")]
+        [CommandOption("--service-id|--service <SERVICE>")]
+        [Description("Service name or ID")]
         public required string ServiceId { get; init; }
 
         [CommandOption("--volume-id <ID>")]
@@ -41,6 +41,7 @@ public sealed class AttachVolumeCommand : AsyncCommand<AttachVolumeCommand.Setti
     {
         var mountPath = PathArg.Check(settings.MountPath, "--mount-path");
         var client = settings.CreateClient();
+        var (projectId, serviceId) = await Resolve.ServiceAsync(client, settings.ProjectId, settings.ServiceId);
 
         var body = new Dictionary<string, object> { ["mountPath"] = mountPath };
         if (!string.IsNullOrEmpty(settings.VolumeId))
@@ -50,7 +51,7 @@ public sealed class AttachVolumeCommand : AsyncCommand<AttachVolumeCommand.Setti
         else
         {
             // The API creates a new volume for every name it is sent; see ServerVolumes.
-            var service = await client.GetAsync($"projects/{settings.ProjectId}/services/{settings.ServiceId}");
+            var service = await client.GetAsync($"projects/{projectId}/services/{serviceId}");
             var serverId = service.RootElement.GetProperty("serverId").GetString()!;
             var byName = await ServerVolumes.ByNameAsync(client, serverId);
             if (byName.TryGetValue(settings.Name!, out var id))
@@ -60,7 +61,7 @@ public sealed class AttachVolumeCommand : AsyncCommand<AttachVolumeCommand.Setti
         }
 
         var result = await client.PostAsync(
-            $"projects/{settings.ProjectId}/services/{settings.ServiceId}/volumes", body);
+            $"projects/{projectId}/services/{serviceId}/volumes", body);
         Output.Write(result);
         return 0;
     }

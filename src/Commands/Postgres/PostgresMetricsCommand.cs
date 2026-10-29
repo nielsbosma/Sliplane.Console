@@ -19,13 +19,25 @@ public sealed class PostgresMetricsCommand : AsyncCommand<PostgresMetricsCommand
         [CommandOption("--to <TIMESTAMP>")]
         [Description("To timestamp (Unix seconds)")]
         public long? To { get; init; }
+
+        [CommandOption("-w|--watch")]
+        [Description("Redraw live charts every 5 s until Ctrl+C (terminal only; not with --from/--to)")]
+        public bool Watch { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
+        var postgresId = await Resolve.PostgresAsync(client, settings.PostgresId);
         var query = MetricsQuery.Build(settings.Range, settings.From, settings.To);
-        var result = await client.GetAsync($"postgres/{settings.PostgresId}/metrics{query}");
+        if (settings.Watch)
+        {
+            if (settings.From.HasValue || settings.To.HasValue)
+                throw SliplaneException.Invalid("--watch shows a moving window; drop --from/--to.");
+            await MetricsWatch.RunAsync("Postgres " + settings.PostgresId, () => client.GetAsync($"postgres/{postgresId}/metrics{query}"), TimeSpan.FromSeconds(5));
+            return 0;
+        }
+        var result = await client.GetAsync($"postgres/{postgresId}/metrics{query}");
         Output.Write(result);
         return 0;
     }

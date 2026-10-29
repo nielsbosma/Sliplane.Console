@@ -8,8 +8,8 @@ public sealed class CreateBucketKeyCommand : AsyncCommand<CreateBucketKeyCommand
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--bucket-id <ID>")]
-        [Description("The ID of the bucket")]
+        [CommandOption("--bucket-id|--bucket <BUCKET>")]
+        [Description("Bucket name or ID")]
         public required string BucketId { get; init; }
 
         [CommandOption("--name <NAME>")]
@@ -20,7 +20,8 @@ public sealed class CreateBucketKeyCommand : AsyncCommand<CreateBucketKeyCommand
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.PostAsync($"buckets/{settings.BucketId}/keys", new { name = settings.Name });
+        var bucketId = await Resolve.BucketAsync(client, settings.BucketId);
+        var result = await client.PostAsync($"buckets/{bucketId}/keys", new { name = settings.Name });
         Output.Write(result);
         return 0;
     }

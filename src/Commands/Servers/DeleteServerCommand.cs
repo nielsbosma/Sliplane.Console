@@ -9,15 +9,17 @@ public sealed class DeleteServerCommand : AsyncCommand<DeleteServerCommand.Setti
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--server-id <ID>")]
-        [Description("The ID of the server to delete")]
+        [CommandOption("--server-id|--server <SERVER>")]
+        [Description("Server name or ID to delete")]
         public required string ServerId { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        await client.DeleteAsync($"servers/{settings.ServerId}");
+        var serverId = await Resolve.ServerAsync(client, settings.ServerId);
+        settings.Confirm($"Delete server {serverId} and everything on it?");
+        await client.DeleteAsync($"servers/{serverId}");
         AnsiConsole.MarkupLine("[green]Server deleted.[/]");
         return 0;
     }

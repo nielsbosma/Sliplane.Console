@@ -8,7 +8,8 @@ public sealed class RotatePostgresCredentialsCommand : AsyncCommand<PostgresSett
     public override async Task<int> ExecuteAsync(CommandContext context, PostgresSettings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.PostAsync($"postgres/{settings.PostgresId}/credentials/rotate");
+        var postgresId = await Resolve.PostgresAsync(client, settings.PostgresId);
+        var result = await client.PostAsync($"postgres/{postgresId}/credentials/rotate");
         Output.Write(result);
         return 0;
     }

@@ -60,7 +60,13 @@ src/
     Output.cs / YamlOutput.cs  YAML by default, JSON with --json
     Json.cs                  JsonElement -> plain objects, for nesting a response in a payload
     PathArg.cs               refuses Windows paths that Git Bash rewrote out of "/"
+    Resolve.cs               name-or-id -> id for projects, services, servers, databases, buckets
+    Interactive.cs           whether a person is at a terminal (the only time anything prompts)
+    EnvEntries.cs            --env-file/--env/--secret-env -> the API's env array
+    SshSession.cs            temporary key -> attach -> wait -> system ssh -> detach + delete
+    MetricsWatch.cs          metrics --watch live sparklines
   Auth/
+    OAuthLogin.cs            browser login (PKCE, loopback) and token refresh
     AccountResolver.cs       --account -> ResolvedAccount (name, config, key), or a no_account error
     SliplaneIdentity.cs      reads the label and organization out of `me`
   Storage/
@@ -129,6 +135,23 @@ preserve them.
 **`PathArg.Check` stays on every option that takes a URL path.** Git Bash rewrites `/` into the Git
 installation directory before this program starts, and the resulting service deploys happily and
 fails every healthcheck with nothing in the output to explain why.
+
+**Prompts only when a person is at a terminal.** `Interactive.IsTerminal` (stdin and stdout not
+redirected, no `CI`) gates every prompt: delete confirmations (`settings.Confirm`), project/server
+pickers, the allow-list offer. An agent's shell is redirected, so it never blocks on a question;
+deletes from scripts behave exactly as before this existed.
+
+**Names never guess.** `Resolve` takes an exact id first, then exactly one exact name; two matches
+fail with both ids. A saved default project (`config set project`) only fills in commands that
+create something, never a lookup.
+
+**The keystore holds more than API keys now.** A browser login stores `{"kind":"oauth",...}` under
+the same `account:<name>` key (`OAuthLogin.Credential.TryParse` tells them apart), and bucket file
+commands store `accessKeyId`, secret and key id (newline-separated) under `bucket:<account>:<bucketId>`.
+
+**Win32 OpenSSH has no ControlMaster.** `SshSession` probes readiness with a throwaway
+`ssh ... exit` (255 = ssh's own failure, anything else = key accepted) instead of a multiplexed
+master, and ignores Ctrl+C while ssh runs so it can still remove the key afterwards.
 
 ## Traps in this codebase
 

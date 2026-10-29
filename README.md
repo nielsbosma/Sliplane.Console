@@ -19,6 +19,17 @@ sliplane services get --project-id p --service-id s --json | jq -r .status
 
 ## Notes on behaviour
 
+**Prompts happen only in a terminal.** Deletes ask for confirmation, and `services create` /
+`presets deploy` offer a project or server to pick when none is given - but only when a person is
+at an interactive terminal. With redirected input or output (scripts, agents, CI) nothing ever
+waits for an answer: deletes run as before, and a missing choice is an error naming the options.
+`--yes` skips the confirmation in a terminal too.
+
+**SSH, tunnels, SQL and bucket files talk to the resource itself.** `services ssh`/`tunnel` use
+the system OpenSSH client with a key that exists only for the session. `postgres query`/`connect`
+use credentials fetched from the API and check this machine's IP against the allow list first.
+Bucket file commands create one access key per machine and bucket, kept in the OS keystore.
+
 **`--env` replaces the whole environment.** It is not a merge - the API takes
 the array it is given. Passing two variables to a service that holds three
 deletes the third. The CLI refuses such an update and names what would be lost;
@@ -104,15 +115,28 @@ sliplane <command> [options]
 
 ### Commands
 
-Every command below takes `--account <name>` (short `-a`), except `accounts *` and
-`agent-readme`.
+Every command below takes `--account <name>` (short `-a`), except `accounts *`,
+`agent-readme`, `agent init`, `presets list`, `version`, `update` and `config show`/`set output`.
+
+Wherever a command takes `--project-id`, `--service-id`, `--server-id`, `--postgres-id`,
+`--bucket-id` or `--credential-id`, it also accepts `--project`, `--service`, ... and a **name**
+instead of an id. A service is looked up in every project when no project is given; an
+ambiguous name fails and lists the candidates.
 
 | Command | Description |
 |---------|-------------|
 | `me` | Get current identity and token context |
 | `agent-readme` | Print the operating manual for an LLM agent |
+| `agent init` | Add or update a Sliplane section in AGENTS.md/CLAUDE.md |
+| `version` | Show the installed version |
+| `update` | Update the installed tool from NuGet (`--check` to only look) |
+| **Config** | |
+| `config show` | Show saved preferences |
+| `config set` | Save `output yaml` or `output json`, or a default `project` for an account |
+| `config unset` | Remove a saved preference |
 | **Accounts** | |
 | `accounts add` | Add an account and store its API key in the OS keystore |
+| `accounts login` | Add an account through a browser login (your own OAuth client) |
 | `accounts list` | List configured accounts |
 | `accounts test` | Check that an account's stored key still works |
 | `accounts remove` | Remove an account and delete its stored key |
@@ -128,7 +152,7 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `servers delete` | Delete a server |
 | `servers rescale` | Rescale a server (scale up only) |
 | `servers rescale-disk` | Grow a server's data disk |
-| `servers metrics` | Get server metrics |
+| `servers metrics` | Get server metrics; `--watch` |
 | `servers volumes` | List server volumes |
 | `servers create-volume` | Create a volume on a server |
 | `servers rename-volume` | Rename a volume |
@@ -141,8 +165,8 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `services pause` | Pause a service |
 | `services unpause` | Unpause a service |
 | `services deploy` | Trigger a deployment |
-| `services logs` | Get service logs |
-| `services metrics` | Get service metrics |
+| `services logs` | Get service logs; `--since 15m`, `--follow` |
+| `services metrics` | Get service metrics; `--watch` for live charts |
 | `services events` | Get service events |
 | `services list-env` | List environment variables |
 | `services set-env` | Create or replace an environment variable |
@@ -152,9 +176,15 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `services attach-volume` | Attach an existing or new volume (redeploys) |
 | `services update-volume` | Change a volume's mount path (redeploys) |
 | `services detach-volume` | Detach a volume, keeping its data (redeploys) |
+| `services ssh` | Shell, `--command`, or `-L` forwards in a service, with a temporary key |
+| `services tunnel` | Forward a local port to a service's internal port |
+| `services domains` | List managed, internal and custom domains with status |
 | `services ssh-keys` | List your SSH keys attached to a service |
 | `services attach-ssh-key` | Attach an SSH key and get the SSH connection details |
 | `services detach-ssh-key` | Detach an SSH key from a service |
+| **Presets** | |
+| `presets list` | List the dashboard's one-click presets |
+| `presets deploy` | Create a service from a preset |
 | **Postgres** | |
 | `postgres list` | List all Postgres databases |
 | `postgres get` | Get Postgres database details |
@@ -165,7 +195,10 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `postgres unpause` | Unpause a paused Postgres database |
 | `postgres restart` | Restart a Postgres database |
 | `postgres rotate-credentials` | Rotate generated credentials |
-| `postgres metrics` | Get CPU, memory, disk and connection metrics |
+| `postgres query` | Run SQL (argument, `--file` or stdin) and print the rows |
+| `postgres connect` | Interactive SQL shell, no psql needed |
+| `postgres allowlist list`, `add`, `remove`, `clear` | Manage the IP allow list one rule at a time |
+| `postgres metrics` | Get CPU, memory, disk and connection metrics; `--watch` |
 | `postgres logs` | List recent server logs |
 | `postgres connections` | List current active connections |
 | `postgres relation-sizes` | List current table and index sizes |
@@ -181,6 +214,10 @@ Every command below takes `--account <name>` (short `-a`), except `accounts *` a
 | `buckets cors` | Get the CORS configuration |
 | `buckets set-cors` | Replace the CORS configuration |
 | `buckets delete-cors` | Delete the CORS configuration |
+| `buckets ls` | List files (one level, or `--recursive`) |
+| `buckets upload` | Upload a file |
+| `buckets download` | Download a file to a path or stdout |
+| `buckets rm` | Delete a file |
 | `buckets keys` | List bucket access keys |
 | `buckets create-key` | Create a bucket access key |
 | `buckets delete-key` | Delete a bucket access key |
@@ -215,11 +252,27 @@ sliplane projects list -a work
 # Create a server
 sliplane servers create --name my-server --instance-type base --location ger -a work
 
-# Deploy a service
-sliplane services deploy --project-id project_abc --service-id service_abc -a work
+# Deploy a service (names work wherever ids do)
+sliplane services deploy --service api -a work
 
-# View service logs
-sliplane services logs --project-id project_abc --service-id service_abc -a work
+# Follow its logs
+sliplane services logs --service api --since 10m -f -a work
+
+# Run a command in it, or open a shell
+sliplane services ssh --service api --command "df -h" -a work
+sliplane services ssh --service api -a work
+
+# Reach a private service from this machine
+sliplane services tunnel --service admin --local-port 8080 -a work
+
+# Query a database without psql
+sliplane postgres query --postgres main "select now()" -a work
+
+# Copy a file into a bucket
+sliplane buckets upload --bucket uploads --file ./logo.png --key img/logo.png -a work
+
+# One-click deploy from the preset catalog
+sliplane presets deploy n8n --server main --name flows -a work
 
 # Create a Postgres database
 sliplane postgres create --name my-db --instance-type base --region ger -a work

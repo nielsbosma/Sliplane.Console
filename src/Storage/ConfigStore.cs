@@ -15,12 +15,22 @@ public sealed class AccountConfig
     public string Organization { get; set; } = "";
 
     public string AddedAt { get; set; } = "";
+
+    /// <summary>Project used by commands that create something when --project is not given.</summary>
+    public string DefaultProject { get; set; } = "";
+}
+
+public sealed class Preferences
+{
+    /// <summary>"yaml" or "json": the output format when --json is not given.</summary>
+    public string Output { get; set; } = "";
 }
 
 public sealed class SliplaneConfig
 {
     public int Version { get; set; } = 1;
     public Dictionary<string, AccountConfig> Accounts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public Preferences Preferences { get; set; } = new();
 }
 
 /// <summary>

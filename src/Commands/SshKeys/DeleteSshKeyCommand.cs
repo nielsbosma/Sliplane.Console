@@ -17,6 +17,7 @@ public sealed class DeleteSshKeyCommand : AsyncCommand<DeleteSshKeyCommand.Setti
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
+        settings.Confirm($"Delete SSH key {settings.KeyId}?");
         await client.DeleteAsync($"ssh-keys/{settings.KeyId}");
         AnsiConsole.MarkupLine("[green]SSH key deleted.[/]");
         return 0;

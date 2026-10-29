@@ -32,6 +32,7 @@ public sealed class ListAccountsCommand : AsyncCommand<ListAccountsCommand.Setti
                 ["organization"] = account.Organization,
                 ["orgId"] = account.OrgId,
                 ["addedAt"] = account.AddedAt,
+                ["auth"] = store.Get(SecretKeys.Account(name)) is { } k && OAuthLogin.Credential.TryParse(k) is not null ? "browser" : "api-key",
                 ["keyStatus"] = await StatusOf(name, account, store, settings.Check)
             };
             accounts.Add(entry);
@@ -59,7 +60,11 @@ public sealed class ListAccountsCommand : AsyncCommand<ListAccountsCommand.Setti
 
         try
         {
-            var client = new SliplaneClient(key, string.IsNullOrWhiteSpace(account.OrgId) ? null : account.OrgId);
+            var oauth = OAuthLogin.Credential.TryParse(key);
+            var client = new SliplaneClient(oauth?.AccessToken ?? key, string.IsNullOrWhiteSpace(account.OrgId) ? null : account.OrgId)
+            {
+                Refresh = oauth is null ? null : () => OAuthLogin.RefreshAndStoreAsync(name, oauth)
+            };
             using var _ = await client.GetAsync("me");
             return "valid";
         }

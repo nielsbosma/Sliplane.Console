@@ -8,8 +8,8 @@ public sealed class UpdateBucketCommand : AsyncCommand<UpdateBucketCommand.Setti
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--bucket-id <ID>")]
-        [Description("The ID of the bucket")]
+        [CommandOption("--bucket-id|--bucket <BUCKET>")]
+        [Description("Bucket name or ID")]
         public required string BucketId { get; init; }
 
         [CommandOption("--versioning <BOOL>")]
@@ -20,7 +20,8 @@ public sealed class UpdateBucketCommand : AsyncCommand<UpdateBucketCommand.Setti
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.PatchAsync($"buckets/{settings.BucketId}", new { versioning = settings.Versioning });
+        var bucketId = await Resolve.BucketAsync(client, settings.BucketId);
+        var result = await client.PatchAsync($"buckets/{bucketId}", new { versioning = settings.Versioning });
         Output.Write(result);
         return 0;
     }

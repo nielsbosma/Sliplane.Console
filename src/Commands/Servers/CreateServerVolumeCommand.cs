@@ -8,8 +8,8 @@ public sealed class CreateServerVolumeCommand : AsyncCommand<CreateServerVolumeC
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--server-id <ID>")]
-        [Description("The ID of the server")]
+        [CommandOption("--server-id|--server <SERVER>")]
+        [Description("Server name or ID")]
         public required string ServerId { get; init; }
 
         [CommandOption("--name <NAME>")]
@@ -20,7 +20,8 @@ public sealed class CreateServerVolumeCommand : AsyncCommand<CreateServerVolumeC
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.PostAsync($"servers/{settings.ServerId}/volumes", new { name = settings.Name });
+        var serverId = await Resolve.ServerAsync(client, settings.ServerId);
+        var result = await client.PostAsync($"servers/{serverId}/volumes", new { name = settings.Name });
         Output.Write(result);
         return 0;
     }

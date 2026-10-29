@@ -8,15 +8,16 @@ public sealed class GetBucketCorsCommand : AsyncCommand<GetBucketCorsCommand.Set
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--bucket-id <ID>")]
-        [Description("The ID of the bucket")]
+        [CommandOption("--bucket-id|--bucket <BUCKET>")]
+        [Description("Bucket name or ID")]
         public required string BucketId { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        var result = await client.GetAsync($"buckets/{settings.BucketId}/cors");
+        var bucketId = await Resolve.BucketAsync(client, settings.BucketId);
+        var result = await client.GetAsync($"buckets/{bucketId}/cors");
         Output.Write(result);
         return 0;
     }

@@ -9,19 +9,21 @@ public sealed class DeleteServiceCommand : AsyncCommand<DeleteServiceCommand.Set
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--project-id <ID>")]
-        [Description("The ID of the project")]
-        public required string ProjectId { get; init; }
+        [CommandOption("--project-id|--project <PROJECT>")]
+        [Description("Project name or ID (optional: the service is looked up in every project)")]
+        public string? ProjectId { get; init; }
 
-        [CommandOption("--service-id <ID>")]
-        [Description("The ID of the service to delete")]
+        [CommandOption("--service-id|--service <SERVICE>")]
+        [Description("Service name or ID to delete")]
         public required string ServiceId { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        await client.DeleteAsync($"projects/{settings.ProjectId}/services/{settings.ServiceId}");
+        var (projectId, serviceId) = await Resolve.ServiceAsync(client, settings.ProjectId, settings.ServiceId);
+        settings.Confirm($"Delete service {serviceId}?");
+        await client.DeleteAsync($"projects/{projectId}/services/{serviceId}");
         AnsiConsole.MarkupLine("[green]Service deleted.[/]");
         return 0;
     }

@@ -9,8 +9,8 @@ public sealed class RescaleServerDiskCommand : AsyncCommand<RescaleServerDiskCom
 {
     public sealed class Settings : ApiSettings
     {
-        [CommandOption("--server-id <ID>")]
-        [Description("The ID of the server whose disk should be rescaled")]
+        [CommandOption("--server-id|--server <SERVER>")]
+        [Description("Server name or ID whose disk should be rescaled")]
         public required string ServerId { get; init; }
 
         [CommandOption("--disk-size-gb <SIZE>")]
@@ -21,7 +21,8 @@ public sealed class RescaleServerDiskCommand : AsyncCommand<RescaleServerDiskCom
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var client = settings.CreateClient();
-        await client.PostAsync($"servers/{settings.ServerId}/disk", new { diskSizeGb = settings.DiskSizeGb });
+        var serverId = await Resolve.ServerAsync(client, settings.ServerId);
+        await client.PostAsync($"servers/{serverId}/disk", new { diskSizeGb = settings.DiskSizeGb });
         AnsiConsole.MarkupLine("[green]Disk rescale request accepted.[/]");
         return 0;
     }
