@@ -40,7 +40,7 @@ public sealed class AddPostgresAllowlistCommand : AsyncCommand<AddPostgresAllowl
         public string? Description { get; init; }
 
         public override ValidationResult Validate() =>
-            (Source is null) == !MyIp ? ValidationResult.Success() : ValidationResult.Error("Pass exactly one of --source or --my-ip.");
+            (Source is null) == MyIp ? ValidationResult.Success() : ValidationResult.Error("Pass exactly one of --source or --my-ip.");
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
