@@ -131,6 +131,8 @@ app.Configure(config =>
             .WithDescription("Unpause a service");
         services.AddCommand<DeployServiceCommand>("deploy")
             .WithDescription("Trigger a deployment");
+        services.AddCommand<RotateDeployHookCommand>("rotate-deploy-hook")
+            .WithDescription("Generate a new deploy hook URL; the old one stops working");
         services.AddCommand<ServiceLogsCommand>("logs")
             .WithDescription("Get service logs");
         services.AddCommand<ServiceMetricsCommand>("metrics")

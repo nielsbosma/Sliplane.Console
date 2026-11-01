@@ -165,6 +165,7 @@ ambiguous name fails and lists the candidates.
 | `services pause` | Pause a service |
 | `services unpause` | Unpause a service |
 | `services deploy` | Trigger a deployment |
+| `services rotate-deploy-hook` | Generate a new deploy hook URL; the old one stops working (read it with `services get`) |
 | `services logs` | Get service logs; `--since 15m`, `--follow` |
 | `services metrics` | Get service metrics; `--watch` for live charts |
 | `services events` | Get service events |

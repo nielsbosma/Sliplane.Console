@@ -130,6 +130,7 @@ public sealed class AgentReadmeCommand : Command<AgentReadmeCommand.Settings>
             sliplane services create --project-id <id> --name <name> --server-id <id> ...
             sliplane services update --project-id <id> --service-id <id> ...
             sliplane services deploy --project-id <id> --service-id <id> [--tag <tag>]
+            sliplane services rotate-deploy-hook --project-id <id> --service-id <id>
             sliplane services set-env --project-id <id> --service-id <id> --key K --value V [--secret]
             sliplane services delete-env --project-id <id> --service-id <id> --key K
             sliplane services pause|unpause --project-id <id> --service-id <id>
@@ -141,6 +142,11 @@ public sealed class AgentReadmeCommand : Command<AgentReadmeCommand.Settings>
         Volume changes on a service redeploy it. `detach-volume` keeps the data on the server;
         `attach-volume --name` reuses the server's volume of that name if there is one, and only
         creates a new volume when there is not.
+
+        `services get` shows the service's `deployHookUrl` (empty unless the key has `secrets:read`).
+        A `GET` or `POST` to that URL deploys the service; add `?tag=<tag>` on an image-based service
+        to change the image tag first. `rotate-deploy-hook` returns a new URL and the old one stops
+        working immediately, which breaks anything that stored it.
 
         ## Metrics
 
