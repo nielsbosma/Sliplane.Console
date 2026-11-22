@@ -218,8 +218,10 @@ keep it out of anything that needs credentials — CI has none.
 ## Releasing
 
 CI builds every push to `main`. Publishing to NuGet happens only on a published GitHub Release:
-the workflow strips the `v` from the tag, packs with that version, and pushes using the
-`NUGET_API_KEY` repository secret.
+the workflow strips the `v` from the tag, packs with that version, and pushes with NuGet trusted
+publishing: `NuGet/login` swaps the job's GitHub OIDC token for a one-hour API key. That needs
+the trusted publishing policy for this repo and `dotnet.yml` on nuget.org (account
+`bosmainteractive` → Trusted Publishing). There is no long-lived API key secret.
 
 ```bash
 gh release create v0.2.0 --title v0.2.0 --notes "..."
