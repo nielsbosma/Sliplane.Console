@@ -26,6 +26,10 @@ jobs:
     if: github.event_name == 'release'
     needs: build-and-test
     runs-on: ubuntu-latest
+    environment: production  # must match the nuget.org trusted publishing policy
+    permissions:
+      contents: read
+      id-token: write  # OIDC token for NuGet trusted publishing
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET
@@ -38,5 +42,10 @@ jobs:
       run: dotnet restore src/Sliplane.Console.csproj
     - name: Pack
       run: dotnet pack src/Sliplane.Console.csproj --configuration Release -p:Version=${{ env.VERSION }} --output ./nupkgs
+    - name: NuGet login (OIDC, short-lived API key)
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: bosmainteractive
     - name: Publish to NuGet
-      run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
